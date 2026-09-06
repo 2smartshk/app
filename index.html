@@ -142,8 +142,8 @@ select.inp { cursor: pointer; appearance: none; -webkit-appearance: none;
 .modal-handle { width: 32px; height: 3px; background: var(--border2); border-radius: 2px; margin: 0 auto 10px; }
 
 /* INVOICE GRID */
-.inv-grid { display: grid; grid-template-columns: 60px 1.5fr 50px 70px 65px 24px; gap: 4px; align-items: center; padding: 5px 0; }
-.inv-grid-header { display: grid; grid-template-columns: 60px 1.5fr 50px 70px 65px 24px; gap: 4px;
+.inv-grid { display: grid; grid-template-columns: 60px 1.35fr 1.05fr 50px 70px 65px 24px; gap: 4px; align-items: center; padding: 5px 0; }
+.inv-grid-header { display: grid; grid-template-columns: 60px 1.35fr 1.05fr 50px 70px 65px 24px; gap: 4px;
   padding-bottom: 4px; border-bottom: 2px solid var(--border); margin-bottom: 4px; }
 .inv-grid-header span { font-size: 9px; font-weight: 700; text-transform: uppercase; color: var(--text3); }
 
@@ -161,8 +161,8 @@ select.inp { cursor: pointer; appearance: none; -webkit-appearance: none;
 .toast.show { opacity: 1; }
 
 @media (max-width: 400px) {
-  .inv-grid { grid-template-columns: 50px 1.2fr 40px 55px 50px 20px; }
-  .inv-grid-header { grid-template-columns: 50px 1.2fr 40px 55px 50px 20px; }
+  .inv-grid { grid-template-columns: 50px 1.1fr 0.9fr 40px 55px 50px 20px; }
+  .inv-grid-header { grid-template-columns: 50px 1.1fr 0.9fr 40px 55px 50px 20px; }
 }
 </style>
 </head>
@@ -200,16 +200,12 @@ select.inp { cursor: pointer; appearance: none; -webkit-appearance: none;
 <!-- DASHBOARD -->
 <div id="view-dashboard" class="view active">
   <div class="stat-row" style="margin-top:6px;">
-    <div class="stat-card"><div class="stat-val" id="dash-net-bal">USD 0.00</div><div class="stat-lbl">Net Balance</div></div>
-    <div class="stat-card"><div class="stat-val" id="dash-today">USD 0</div><div class="stat-lbl">Today Revenue</div></div>
   </div>
   <div class="menu-group"><div class="menu-group-title">━━━ DAILY BOOKS ━━━</div>
     <div class="menu-items">
       <div class="menu-item" onclick="showView('purchase-invoice')">Purchase Invoices<span>Add stock</span></div>
       <div class="menu-item" onclick="showView('sale-invoice')">Sale Invoices<span>Record sales</span></div>
-      <div class="menu-item" onclick="showView('receipt-voucher')">Receipts<span>Cash in</span></div>
-      <div class="menu-item" onclick="showView('payment-voucher')">Payments<span>Cash out</span></div>
-      <div class="menu-item" onclick="showView('journal-voucher')" style="grid-column:1/-1">Journal Vouchers</div>
+      <div class="menu-item" onclick="showView('voucher-book')" style="grid-column:1/-1">Vouchers<span>Receipt · Payment · Journal</span></div>
     </div>
   </div>
   <div class="menu-group"><div class="menu-group-title">━━━ SPECIAL BOOKS ━━━</div>
@@ -241,7 +237,9 @@ select.inp { cursor: pointer; appearance: none; -webkit-appearance: none;
   <div style="padding:8px 10px 0;display:flex;gap:6px;">
     <button onclick="togglePurList()" class="btn btn-dark btn-sm" id="pur-list-toggle-btn" style="flex:1;">📋 View All Invoices</button>
   </div>
-  <div id="pur-list-panel" style="display:none;padding:8px 10px 0;"></div>
+  <div id="pur-list-panel" style="display:none;padding:8px 10px 0;">
+    <input id="pur-search" class="inp inp-sm" placeholder="Search voucher / supplier / memo..." oninput="renderPurList()">
+  </div>
   <div class="card" id="pur-form-panel">
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
       <div><span class="lbl">Voucher No</span><input type="text" id="pur-vno" readonly class="inp inp-sm" style="color:var(--primary);font-weight:700;"></div>
@@ -253,7 +251,7 @@ select.inp { cursor: pointer; appearance: none; -webkit-appearance: none;
     <input type="text" id="pur-memo" class="inp inp-sm" placeholder="Optional...">
     <div class="card-title" style="margin-top:10px;">Items</div>
     <div class="inv-grid-header">
-      <span>Code</span><span>Detail/Description</span><span>Qty</span><span>Rate</span><span>Amount</span><span></span>
+      <span>Code</span><span>Detail/Description</span><span>Memo</span><span>Qty</span><span>Rate</span><span>Amount</span><span></span>
     </div>
     <div id="pur-rows"></div>
     <button onclick="addPurRow()" class="btn btn-dark btn-full" style="margin-top:6px;font-size:11px;">+ Add Item</button>
@@ -266,7 +264,7 @@ select.inp { cursor: pointer; appearance: none; -webkit-appearance: none;
     </div>
     <div class="btn-group" style="margin-top:8px;">
       <button onclick="savePurchaseInvoice()" id="pur-post-btn" class="btn btn-success">Post</button>
-      <button onclick="printPurchasePDF()" class="btn btn-dark">Print</button>
+      
     </div>
   </div>
 </div>
@@ -276,7 +274,9 @@ select.inp { cursor: pointer; appearance: none; -webkit-appearance: none;
   <div style="padding:8px 10px 0;display:flex;gap:6px;">
     <button onclick="toggleSalList()" class="btn btn-dark btn-sm" id="sal-list-toggle-btn" style="flex:1;">📋 View All Invoices</button>
   </div>
-  <div id="sal-list-panel" style="display:none;padding:8px 10px 0;"></div>
+  <div id="sal-list-panel" style="display:none;padding:8px 10px 0;">
+    <input id="sal-search" class="inp inp-sm" placeholder="Search voucher / customer / memo..." oninput="renderSalList()">
+  </div>
   <div class="card" id="sal-form-panel">
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
       <div><span class="lbl">Voucher No</span><input type="text" id="sal-vno" readonly class="inp inp-sm" style="color:var(--primary);font-weight:700;"></div>
@@ -288,7 +288,7 @@ select.inp { cursor: pointer; appearance: none; -webkit-appearance: none;
     <input type="text" id="sal-memo" class="inp inp-sm" placeholder="Optional...">
     <div class="card-title" style="margin-top:10px;">Items</div>
     <div class="inv-grid-header">
-      <span>Code</span><span>Detail/Description</span><span>Qty</span><span>Rate</span><span>Amount</span><span></span>
+      <span>Code</span><span>Detail/Description</span><span>Memo</span><span>Qty</span><span>Rate</span><span>Amount</span><span></span>
     </div>
     <div id="sal-rows"></div>
     <button onclick="addSalRow()" class="btn btn-dark btn-full" style="margin-top:6px;font-size:11px;">+ Add Item</button>
@@ -301,71 +301,66 @@ select.inp { cursor: pointer; appearance: none; -webkit-appearance: none;
     </div>
     <div class="btn-group" style="margin-top:8px;">
       <button onclick="saveSaleInvoice()" id="sal-post-btn" class="btn btn-success">Post</button>
-      <button onclick="printSalePDF()" class="btn btn-dark">Print</button>
+      
     </div>
   </div>
 </div>
 
-<!-- RECEIPT VOUCHER -->
-<div id="view-receipt-voucher" class="view">
+<!-- UNIFIED VOUCHER BOOK -->
+<div id="view-voucher-book" class="view">
   <div class="card">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
-      <div><span class="lbl">Voucher No</span><input type="text" id="rec-vno" readonly class="inp inp-sm" style="color:var(--primary);font-weight:700;"></div>
-      <div><span class="lbl">Date</span><input type="date" id="rec-date" class="inp inp-sm"></div>
+    <div class="seg" style="margin-bottom:10px;">
+      <div class="seg-item active" data-vtype="RECEIPT" onclick="setVoucherType('RECEIPT')">Receipt</div>
+      <div class="seg-item" data-vtype="PAYMENT" onclick="setVoucherType('PAYMENT')">Payment</div>
+      <div class="seg-item" data-vtype="JOURNAL" onclick="setVoucherType('JOURNAL')">Journal</div>
     </div>
-    <span class="lbl">Receipts From</span>
-    <select id="rec-party" class="inp" onchange="updateRecBalance()"></select>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
-      <div><span class="lbl">A/c Balance</span><div id="rec-bal" style="padding:6px;background:var(--surface2);border-radius:4px;font-weight:700;">0.00</div></div>
-      <div><span class="lbl">Receipts As</span><select id="rec-cash" class="inp inp-sm"><option value="CASH">CASH</option><option value="BANK">BANK</option></select></div>
+      <div><span class="lbl">Voucher No</span><input type="text" id="uv-vno" readonly class="inp inp-sm" style="color:var(--primary);font-weight:700;"></div>
+      <div><span class="lbl">Date</span><input type="date" id="uv-date" class="inp inp-sm"></div>
     </div>
-    <span class="lbl">Amount</span>
-    <input type="number" id="rec-amt" class="inp" placeholder="0.00" style="font-size:18px;font-weight:700;text-align:center;color:var(--success);">
-    <span class="lbl">Narration</span>
-    <input type="text" id="rec-desc" class="inp inp-sm" placeholder="Details...">
-    <button onclick="saveReceipt()" class="btn btn-success btn-full">Post Receipt</button>
+
+    <div id="uv-party-section">
+      <span class="lbl" id="uv-party-label">Receipts From</span>
+      <select id="uv-party" class="inp" onchange="updateUnifiedBalance()"></select>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+        <div><span class="lbl">A/c Balance</span><div id="uv-bal" style="padding:6px;background:var(--surface2);border-radius:4px;font-weight:700;">0.00</div></div>
+        <div><span class="lbl" id="uv-account-label">Receipts As</span><select id="uv-cash" class="inp inp-sm"><option value="CASH">CASH</option><option value="BANK">BANK</option></select></div>
+      </div>
+      <span class="lbl">Amount</span>
+      <input type="number" id="uv-amt" class="inp" placeholder="0.00" style="font-size:18px;font-weight:700;text-align:center;">
+      <span class="lbl">Memo / Narration</span>
+      <input type="text" id="uv-memo" class="inp inp-sm" placeholder="e.g. Against invoice 5000, paid 2000...">
+      <button onclick="postUnifiedVoucher()" class="btn btn-success btn-full" id="uv-post-btn">Post Receipt</button>
+    </div>
+
+    <div id="uv-journal-section" class="hidden">
+      <span class="lbl">Memo / Narration</span>
+      <input type="text" id="uv-jv-narr" class="inp" placeholder="Journal narration...">
+      <div class="card-title">Double Entry</div>
+      <div id="uv-jv-rows"></div>
+      <button onclick="addUnifiedJournalRow()" class="btn btn-dark btn-full" style="margin-top:6px;font-size:11px;">+ Add Entry</button>
+      <div style="margin-top:6px;display:flex;justify-content:space-between;font-weight:700;">
+        <span>Dr: <span id="uv-dr-total">0.00</span></span>
+        <span>Cr: <span id="uv-cr-total">0.00</span></span>
+      </div>
+      <button onclick="postUnifiedVoucher()" class="btn btn-success btn-full" style="margin-top:6px;">Post Journal</button>
+    </div>
   </div>
 </div>
 
-<!-- PAYMENT VOUCHER -->
-<div id="view-payment-voucher" class="view">
-  <div class="card">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
-      <div><span class="lbl">Voucher No</span><input type="text" id="pay-vno" readonly class="inp inp-sm" style="color:var(--primary);font-weight:700;"></div>
-      <div><span class="lbl">Date</span><input type="date" id="pay-date" class="inp inp-sm"></div>
-    </div>
-    <span class="lbl">Payment To</span>
-    <select id="pay-party" class="inp" onchange="updatePayBalance()"></select>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
-      <div><span class="lbl">A/c Balance</span><div id="pay-bal" style="padding:6px;background:var(--surface2);border-radius:4px;font-weight:700;">0.00</div></div>
-      <div><span class="lbl">Payment As</span><select id="pay-cash" class="inp inp-sm"><option value="CASH">CASH</option><option value="BANK">BANK</option></select></div>
-    </div>
-    <span class="lbl">Amount</span>
-    <input type="number" id="pay-amt" class="inp" placeholder="0.00" style="font-size:18px;font-weight:700;text-align:center;color:var(--danger);">
-    <span class="lbl">Narration</span>
-    <input type="text" id="pay-desc" class="inp inp-sm" placeholder="Details...">
-    <button onclick="savePayment()" class="btn btn-danger btn-full">Post Payment</button>
+<!-- VOUCHER REGISTER / SEARCH -->
+<div class="card" style="margin:8px 10px;" id="voucher-register-card">
+  <div class="card-title">Voucher Register / Search Old Voucher</div>
+  <div style="display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:6px;">
+    <div><span class="lbl">Search Voucher / Memo</span><input type="text" id="voucher-search" class="inp inp-sm" placeholder="e.g. RCT-00001 / invoice / memo" oninput="renderVoucherRegister()"></div>
+    <div><span class="lbl">Voucher Type</span><select id="voucher-filter-type" class="inp inp-sm" onchange="renderVoucherRegister()"><option value="ALL">All Types</option><option value="RECEIPT">Receipt</option><option value="PAYMENT">Payment</option><option value="JOURNAL">Journal</option><option value="PURCHASE">Purchase</option><option value="SALE">Sale</option></select></div>
+    <div><span class="lbl">Party</span><select id="voucher-filter-party" class="inp inp-sm" onchange="renderVoucherRegister()"><option value="ALL">All Parties</option></select></div>
   </div>
-</div>
-
-<!-- JOURNAL VOUCHER -->
-<div id="view-journal-voucher" class="view">
-  <div class="card">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
-      <div><span class="lbl">Voucher No</span><input type="text" id="jv-vno" readonly class="inp inp-sm" style="color:var(--primary);font-weight:700;"></div>
-      <div><span class="lbl">Date</span><input type="date" id="jv-date" class="inp inp-sm"></div>
-    </div>
-    <span class="lbl">Narration</span>
-    <input type="text" id="jv-narr" class="inp" placeholder="Journal narration...">
-    <div class="card-title">Entries</div>
-    <div id="jv-rows"></div>
-    <button onclick="addJvRow()" class="btn btn-dark btn-full" style="margin-top:6px;font-size:11px;">+ Add Entry</button>
-    <div style="margin-top:6px;display:flex;justify-content:space-between;font-weight:700;">
-      <span>Dr: <span id="jv-dr-total">0.00</span></span>
-      <span>Cr: <span id="jv-cr-total">0.00</span></span>
-    </div>
-    <button onclick="saveJournal()" class="btn btn-success btn-full" style="margin-top:6px;">Post Journal</button>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px;">
+    <div><span class="lbl">From Date</span><input type="date" id="voucher-from-date" class="inp inp-sm" onchange="renderVoucherRegister()"></div>
+    <div><span class="lbl">To Date</span><input type="date" id="voucher-to-date" class="inp inp-sm" onchange="renderVoucherRegister()"></div>
   </div>
+  <div id="voucher-register-list" style="margin-top:8px;"></div>
 </div>
 
 <!-- LEDGERS -->
@@ -388,15 +383,18 @@ select.inp { cursor: pointer; appearance: none; -webkit-appearance: none;
   <div class="card">
     <div class="card-title">Add New Account</div>
     <span class="lbl">Main Category</span>
-    <select id="acc-main-cat" class="inp" onchange="updateAccCode()">
+    <select id="acc-main-cat" class="inp" onchange="updateAccTypeOptions()">
       <option value="Assets">Assets</option>
       <option value="Liabilities">Liabilities</option>
       <option value="Capital">Capital</option>
       <option value="Revenue">Revenue</option>
       <option value="Expenses">Expenses</option>
     </select>
-    <span class="lbl">Sub Category / Account Name</span>
-    <input type="text" id="acc-sub-name" placeholder="e.g. Cash & Bank, Inventory..." class="inp">
+    <span class="lbl">Account Type</span>
+    <select id="acc-type" class="inp" onchange="updateAccNamePrompt()"></select>
+    <span class="lbl">Account Name</span>
+    <input type="text" id="acc-sub-name" placeholder="Enter account name..." class="inp">
+    <div id="acc-help" style="font-size:10px;color:var(--text3);margin:-4px 0 8px;">Select Account Type, then manually enter the ledger/account name.</div>
     <span class="lbl">Account Code (Auto)</span>
     <input type="text" id="acc-code" readonly class="inp inp-sm" style="color:var(--primary);font-weight:700;">
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
@@ -417,6 +415,7 @@ select.inp { cursor: pointer; appearance: none; -webkit-appearance: none;
   </div>
   <div class="card" style="padding:0;">
     <div class="card-title" style="padding:12px;">Chart of Accounts</div>
+    <div style="padding:0 12px 8px;"><input id="account-search" class="inp inp-sm" placeholder="Search account / code / type..." oninput="renderChartOfAccounts()"></div>
     <div id="chart-of-accounts"></div>
   </div>
 </div>
@@ -537,6 +536,55 @@ const ACCOUNT_CATEGORIES = {
   Expenses: { prefix: 'EX', next: 1 }
 };
 
+const ACCOUNT_GROUPS = {
+  Assets: [
+    {value:'Current Assets', label:'Current Assets'},
+    {value:'Fixed Assets', label:'Fixed Assets'},
+    {value:'Other Assets', label:'Other Assets'}
+  ],
+  Liabilities: [
+    {value:'Current Liabilities', label:'Current Liabilities'},
+    {value:'Long-term Liabilities', label:'Long-term Liabilities'}
+  ],
+  Capital: [
+    {value:'Owner Capital', label:'Owner Capital'},
+    {value:'Retained Earnings', label:'Retained Earnings'}
+  ],
+  Revenue: [
+    {value:'Operating Revenue', label:'Operating Revenue'},
+    {value:'Other Revenue', label:'Other Revenue'}
+  ],
+  Expenses: [
+    {value:'Cost of Sales', label:'Cost of Sales'},
+    {value:'Operating Expenses', label:'Operating Expenses'},
+    {value:'Other Expenses', label:'Other Expenses'}
+  ]
+};
+
+const ACCOUNT_TYPES = {
+  'Current Assets': [
+    {value:'Cash', label:'Cash'}, {value:'Bank', label:'Bank'},
+    {value:'Accounts Receivable', label:'Accounts Receivable'},
+    {value:'Inventory', label:'Inventory'}, {value:'Other Current Asset', label:'Other Current Asset'}
+  ],
+  'Fixed Assets': [
+    {value:'Property, Plant & Equipment', label:'Property, Plant & Equipment'},
+    {value:'Accumulated Depreciation', label:'Accumulated Depreciation'}
+  ],
+  'Other Assets': [{value:'Other Asset',label:'Other Asset'}],
+  'Current Liabilities': [
+    {value:'Accounts Payable', label:'Accounts Payable'}, {value:'Other Current Liability',label:'Other Current Liability'}
+  ],
+  'Long-term Liabilities': [{value:'Long-term Liability',label:'Long-term Liability'}],
+  'Owner Capital': [{value:'Owner Capital',label:'Owner Capital'}, {value:'Drawings',label:'Drawings'}],
+  'Retained Earnings': [{value:'Retained Earnings',label:'Retained Earnings'}],
+  'Operating Revenue': [{value:'Sales Revenue',label:'Sales Revenue'}, {value:'Service Revenue',label:'Service Revenue'}],
+  'Other Revenue': [{value:'Other Revenue',label:'Other Revenue'}],
+  'Cost of Sales': [{value:'Cost of Goods Sold',label:'Cost of Goods Sold'}, {value:'Purchase',label:'Purchase'}],
+  'Operating Expenses': [{value:'Operating Expense',label:'Operating Expense'}],
+  'Other Expenses': [{value:'Other Expense',label:'Other Expense'}]
+};
+
 let db = JSON.parse(localStorage.getItem('SmartAcc_Pro')) || {
   config: {
     name: 'My Company', address: '123 Main Street, City', phone: '+1 234 567 890',
@@ -557,6 +605,17 @@ let db = JSON.parse(localStorage.getItem('SmartAcc_Pro')) || {
   nextPartyCode: 6
 };
 
+// Normalize older saved accounts so the detailed chart remains compatible with existing data.
+(db.accounts||[]).forEach(a=>{
+  if(!a.group){
+    a.group=ACCOUNT_GROUPS[a.category]?.[0]?.value||'';
+  }
+  if(!a.accountType){
+    a.accountType=a.name?.toUpperCase().includes('CASH')?'Cash':a.name?.toUpperCase().includes('BANK')?'Bank':a.category==='Assets'?'Other Current Asset':a.category==='Liabilities'?'Other Current Liability':a.category==='Revenue'?'Other Revenue':a.category==='Expenses'?'Operating Expense':'Owner Capital';
+  }
+  if(a.linkedPartyId===undefined)a.linkedPartyId=null;
+});
+
 function save() { localStorage.setItem('SmartAcc_Pro', JSON.stringify(db)); }
 function cur() { return db.config.currency || 'USD'; }
 function fmt(n) { return cur() + ' ' + (Number(n)||0).toLocaleString('en-US',{minimumFractionDigits:2}); }
@@ -569,6 +628,7 @@ let currentView = 'dashboard', currentRecordIndex = 0, currentRecords = [];
 let editingItemId = null, currentStmtId = null, ledgerFilter = 'all', repTab = 'pl', itemSelectCallback = null;
 let editingTxId = null;
 let editingAccId = null;
+let editingVoucherId=null;
 let currentAccOBType = 'Dr';
 
 function updateTitleBar(module) { document.getElementById('title-module').innerText = module; }
@@ -581,8 +641,7 @@ function showView(v) {
   currentView = v;
   const titles = {
     'dashboard':'MAIN MENU','purchase-invoice':'PURCHASE INVOICE BOOK','sale-invoice':'SALE INVOICE BOOK',
-    'receipt-voucher':'RECEIPT VOUCHERS BOOK','payment-voucher':'PAYMENT VOUCHERS BOOK',
-    'journal-voucher':'JOURNAL VOUCHERS BOOK','ledgers':'PARTY LEDGERS','accounts-manager':'ACCOUNTS MANAGER',
+    'voucher-book':'VOUCHER BOOK','ledgers':'PARTY LEDGERS','accounts-manager':'ACCOUNTS MANAGER',
     'stock-manager':'STOCK MANAGER','stock-ledger':'STOCK LEDGER','statement':'ACCOUNT STATEMENT',
     'reports':'REPORTS','settings':'CONFIGURATION'
   };
@@ -591,11 +650,9 @@ function showView(v) {
   if (v==='dashboard') initDashboard();
   if (v==='purchase-invoice') initPurchaseInvoice();
   if (v==='sale-invoice') initSaleInvoice();
-  if (v==='receipt-voucher') initReceiptVoucher();
-  if (v==='payment-voucher') initPaymentVoucher();
-  if (v==='journal-voucher') initJournalVoucher();
+  if (v==='voucher-book') initUnifiedVoucher();
   if (v==='ledgers') renderLedgers();
-  if (v==='accounts-manager') { editingAccId=null; document.getElementById('acc-save-btn').innerText='Save Account'; updateAccCode(); renderChartOfAccounts(); }
+  if (v==='accounts-manager') { resetAccountForm(); renderChartOfAccounts(); }
   if (v==='stock-manager') renderStockItems();
   if (v==='stock-ledger') initStockLedger();
   if (v==='reports') { setRepTab('pl'); }
@@ -610,8 +667,7 @@ function navLast(){ if(currentRecords.length>0){currentRecordIndex=currentRecord
 function navInsert(){
   if(currentView==='purchase-invoice')initPurchaseInvoice();
   else if(currentView==='sale-invoice')initSaleInvoice();
-  else if(currentView==='receipt-voucher')initReceiptVoucher();
-  else if(currentView==='payment-voucher')initPaymentVoucher();
+  else if(currentView==='voucher-book')initUnifiedVoucher();
 }
 function navEdit(){
   if(currentView==='sale-invoice'){document.getElementById('sal-list-panel').style.display==='none'?toggleSalList():toast('Pick a record from the list to edit');}
@@ -627,9 +683,7 @@ function navCancel(){ showView('dashboard'); }
 function navPost(){
   if(currentView==='purchase-invoice')savePurchaseInvoice();
   else if(currentView==='sale-invoice')saveSaleInvoice();
-  else if(currentView==='receipt-voucher')saveReceipt();
-  else if(currentView==='payment-voucher')savePayment();
-  else if(currentView==='journal-voucher')saveJournal();
+  else if(currentView==='voucher-book')postUnifiedVoucher();
 }
 function navList(){
   if(currentView==='purchase-invoice')togglePurList();
@@ -651,14 +705,7 @@ function loadCurrentRecord(){
 
 // ============ DASHBOARD ============
 function initDashboard(){
-  const ts=db.transactions.filter(t=>t.type==='SALE').reduce((s,t)=>s+t.amount,0);
-  const tp=db.transactions.filter(t=>t.type==='PURCHASE').reduce((s,t)=>s+t.amount,0);
-  const tr=db.transactions.filter(t=>t.type==='RECEIPT').reduce((s,t)=>s+t.amount,0);
-  const tpay=db.transactions.filter(t=>t.type==='PAYMENT').reduce((s,t)=>s+t.amount,0);
-  const nb=ts+tr-tp-tpay;
-  const td=db.transactions.filter(t=>t.type==='SALE'&&t.date===todayStr()).reduce((s,t)=>s+t.amount,0);
-  document.getElementById('dash-net-bal').innerText=fmt(nb);
-  document.getElementById('dash-today').innerText=fmt(td);
+  // Keep the home page clean: no dashboard search, Net Balance, or Revenue cards.
 }
 
 // ============ PURCHASE INVOICE ============
@@ -685,6 +732,7 @@ function addPurRow(){
   const row=document.createElement('div');row.className='inv-grid';
   row.innerHTML=`<input type="text" placeholder="Code" class="inp inp-sm code-input" style="margin:0;cursor:pointer;" readonly onfocus="openItemSelector(this,'pur')">
     <input type="text" placeholder="Detail / Description" class="inp inp-sm" style="margin:0;" oninput="calcPurTotal()">
+    <input type="text" placeholder="Manual Memo" class="inp inp-sm item-memo" style="margin:0;">
     <input type="number" placeholder="Qty" value="1" class="inp inp-sm" style="margin:0;text-align:center;" oninput="calcPurTotal()">
     <input type="number" placeholder="Rate" value="0.00" step="0.01" class="inp inp-sm" style="margin:0;text-align:right;" oninput="calcPurTotal()">
     <span class="line-amt" style="font-size:11px;font-weight:600;text-align:right;">0.00</span>
@@ -698,9 +746,10 @@ function getPurItems(){
     const inputs=row.querySelectorAll('input');
     const code=inputs[0].value.trim();
     const detail=inputs[1].value.trim();
-    const qty=parseFloat(inputs[2].value)||0;
-    const rate=parseFloat(inputs[3].value)||0;
-    if(code||detail||qty)items.push({code,detail,qty,rate});
+    const memo=inputs[2].value.trim();
+    const qty=parseFloat(inputs[3].value)||0;
+    const rate=parseFloat(inputs[4].value)||0;
+    if(code||detail||memo||qty)items.push({code,detail,memo,qty,rate});
     row.querySelector('.line-amt').innerText=fmtN(qty*rate);
   });
   return items;
@@ -733,7 +782,7 @@ function savePurchaseInvoice(){
       (old.items||[]).forEach(it=>{if(it.code){const found=db.items.find(i=>String(i.code).padStart(5,'0')===it.code||String(i.code)===it.code);if(found)found.stock=Math.max(0,(found.stock||0)-it.qty);}});
       db.transactions[idx]={...old,refNo,date:document.getElementById('pur-date').value,partyId:pid,amount:net,subtotal:gross,charges:chrg,discount:disc,convRate:rate,memo:document.getElementById('pur-memo').value,items};
       items.forEach(it=>{if(it.code){const found=db.items.find(i=>String(i.code).padStart(5,'0')===it.code||String(i.code)===it.code);if(found)found.stock=(found.stock||0)+it.qty;}});
-      save();editingTxId=null;toast('✓ '+refNo+' updated');showView('dashboard');
+      save();editingTxId=null;toast('✓ '+refNo+' updated');generatePDF(db.transactions[idx]);showView('dashboard');
       return;
     }
   }
@@ -745,7 +794,7 @@ function savePurchaseInvoice(){
     }
   });
   db.transactions.push(tx);db.nextVouchers.PUR++;save();
-  toast('✓ '+refNo+' posted');showView('dashboard');
+  toast('✓ '+refNo+' posted');generatePDF(tx);showView('dashboard');
 }
 
 function togglePurList(){
@@ -757,10 +806,11 @@ function togglePurList(){
   if(showing)renderPurList();
 }
 function renderPurList(){
-  const list=db.transactions.filter(t=>t.type==='PURCHASE').sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const q=(document.getElementById('pur-search')?.value||'').trim().toLowerCase();
+  const list=db.transactions.filter(t=>t.type==='PURCHASE' && (!q||[t.refNo,t.date,t.memo,t.desc,db.parties.find(p=>p.id===t.partyId)?.name||''].join(' ').toLowerCase().includes(q))).sort((a,b)=>new Date(b.date)-new Date(a.date));
   document.getElementById('pur-list-panel').innerHTML=list.map(t=>{
     const p=db.parties.find(x=>x.id===t.partyId);
-    return `<div class="ledger-card" style="cursor:default;"><div style="padding:12px;display:flex;justify-content:space-between;"><div><div style="font-weight:700;">${t.refNo}</div><div style="font-size:10px;color:var(--text3);">${t.date} · ${p?p.name:'Unknown'}</div></div><div style="text-align:right;"><div style="font-size:15px;font-weight:800;">${fmtN(t.amount)}</div></div></div><div style="display:flex;gap:4px;padding:0 12px 8px;"><button onclick="editPurchaseTx('${t.id}')" class="btn btn-dark btn-xs">Edit</button><button onclick="deletePurchaseTx('${t.id}')" class="btn btn-xs" style="background:var(--danger-tint);color:var(--danger);">Delete</button></div></div>`;
+    return `<div class="ledger-card" style="cursor:default;"><div style="padding:12px;display:flex;justify-content:space-between;"><div><div style="font-weight:700;">${t.refNo}</div><div style="font-size:10px;color:var(--text3);">${t.date} · ${p?p.name:'Unknown'}</div></div><div style="text-align:right;"><div style="font-size:15px;font-weight:800;">${fmtN(t.amount)}</div></div></div><div style="display:flex;gap:4px;padding:0 12px 8px;"><button onclick="viewInvoiceTx('${t.id}')" class="btn btn-dark btn-xs">View</button><button onclick="printInvoiceTx('${t.id}')" class="btn btn-dark btn-xs">Print</button><button onclick="editPurchaseTx('${t.id}')" class="btn btn-dark btn-xs">Edit</button><button onclick="deletePurchaseTx('${t.id}')" class="btn btn-xs" style="background:var(--danger-tint);color:var(--danger);">Delete</button></div></div>`;
   }).join('')||'<div style="text-align:center;padding:20px;color:var(--text3);">No purchase invoices yet</div>';
 }
 function editPurchaseTx(id){
@@ -830,6 +880,7 @@ function addSalRow(){
   const row=document.createElement('div');row.className='inv-grid';
   row.innerHTML=`<input type="text" placeholder="Code" class="inp inp-sm code-input" style="margin:0;cursor:pointer;" readonly onfocus="openItemSelector(this,'sal')">
     <input type="text" placeholder="Detail / Description" class="inp inp-sm" style="margin:0;" oninput="calcSalTotal()">
+    <input type="text" placeholder="Manual Memo" class="inp inp-sm item-memo" style="margin:0;">
     <input type="number" placeholder="Qty" value="1" class="inp inp-sm" style="margin:0;text-align:center;" oninput="calcSalTotal()">
     <input type="number" placeholder="Rate" value="0.00" step="0.01" class="inp inp-sm" style="margin:0;text-align:right;" oninput="calcSalTotal()">
     <span class="line-amt" style="font-size:11px;font-weight:600;text-align:right;">0.00</span>
@@ -843,9 +894,10 @@ function getSalItems(){
     const inputs=row.querySelectorAll('input');
     const code=inputs[0].value.trim();
     const detail=inputs[1].value.trim();
-    const qty=parseFloat(inputs[2].value)||0;
-    const rate=parseFloat(inputs[3].value)||0;
-    if(code||detail||qty)items.push({code,detail,qty,rate});
+    const memo=inputs[2].value.trim();
+    const qty=parseFloat(inputs[3].value)||0;
+    const rate=parseFloat(inputs[4].value)||0;
+    if(code||detail||memo||qty)items.push({code,detail,memo,qty,rate});
     row.querySelector('.line-amt').innerText=fmtN(qty*rate);
   });
   return items;
@@ -877,7 +929,7 @@ function saveSaleInvoice(){
       (old.items||[]).forEach(it=>{if(it.code){const found=db.items.find(i=>String(i.code).padStart(5,'0')===it.code||String(i.code)===it.code);if(found)found.stock=(found.stock||0)+it.qty;}});
       db.transactions[idx]={...old,refNo,date:document.getElementById('sal-date').value,partyId:pid,amount:net,subtotal:gross,charges:chrg,discount:disc,convRate:rate,memo:document.getElementById('sal-memo').value,items};
       items.forEach(it=>{if(it.code){const found=db.items.find(i=>String(i.code).padStart(5,'0')===it.code||String(i.code)===it.code);if(found)found.stock=Math.max(0,(found.stock||0)-it.qty);}});
-      save();editingTxId=null;toast('✓ '+refNo+' updated');showView('dashboard');
+      save();editingTxId=null;toast('✓ '+refNo+' updated');generatePDF(db.transactions[idx]);showView('dashboard');
       return;
     }
   }
@@ -889,7 +941,7 @@ function saveSaleInvoice(){
     }
   });
   db.transactions.push(tx);db.nextVouchers.SAL++;save();
-  toast('✓ '+refNo+' posted');showView('dashboard');
+  toast('✓ '+refNo+' posted');generatePDF(tx);showView('dashboard');
 }
 
 function toggleSalList(){
@@ -901,10 +953,11 @@ function toggleSalList(){
   if(showing)renderSalList();
 }
 function renderSalList(){
-  const list=db.transactions.filter(t=>t.type==='SALE').sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const q=(document.getElementById('sal-search')?.value||'').trim().toLowerCase();
+  const list=db.transactions.filter(t=>t.type==='SALE' && (!q||[t.refNo,t.date,t.memo,t.desc,db.parties.find(p=>p.id===t.partyId)?.name||''].join(' ').toLowerCase().includes(q))).sort((a,b)=>new Date(b.date)-new Date(a.date));
   document.getElementById('sal-list-panel').innerHTML=list.map(t=>{
     const p=db.parties.find(x=>x.id===t.partyId);
-    return `<div class="ledger-card" style="cursor:default;"><div style="padding:12px;display:flex;justify-content:space-between;"><div><div style="font-weight:700;">${t.refNo}</div><div style="font-size:10px;color:var(--text3);">${t.date} · ${p?p.name:'Unknown'}</div></div><div style="text-align:right;"><div style="font-size:15px;font-weight:800;color:var(--success);">${fmtN(t.amount)}</div></div></div><div style="display:flex;gap:4px;padding:0 12px 8px;"><button onclick="editSaleTx('${t.id}')" class="btn btn-dark btn-xs">Edit</button><button onclick="deleteSaleTx('${t.id}')" class="btn btn-xs" style="background:var(--danger-tint);color:var(--danger);">Delete</button></div></div>`;
+    return `<div class="ledger-card" style="cursor:default;"><div style="padding:12px;display:flex;justify-content:space-between;"><div><div style="font-weight:700;">${t.refNo}</div><div style="font-size:10px;color:var(--text3);">${t.date} · ${p?p.name:'Unknown'}</div></div><div style="text-align:right;"><div style="font-size:15px;font-weight:800;color:var(--success);">${fmtN(t.amount)}</div></div></div><div style="display:flex;gap:4px;padding:0 12px 8px;"><button onclick="viewInvoiceTx('${t.id}')" class="btn btn-dark btn-xs">View</button><button onclick="printInvoiceTx('${t.id}')" class="btn btn-dark btn-xs">Print</button><button onclick="editSaleTx('${t.id}')" class="btn btn-dark btn-xs">Edit</button><button onclick="deleteSaleTx('${t.id}')" class="btn btn-xs" style="background:var(--danger-tint);color:var(--danger);">Delete</button></div></div>`;
   }).join('')||'<div style="text-align:center;padding:20px;color:var(--text3);">No sale invoices yet</div>';
 }
 function editSaleTx(id){
@@ -934,6 +987,7 @@ function loadSaleRecord(t){
     const row=document.createElement('div');row.className='inv-grid';
     row.innerHTML=`<input type="text" value="${it.code||''}" class="inp inp-sm code-input" style="margin:0;" readonly onfocus="openItemSelector(this,'sal')">
       <input type="text" value="${it.detail||''}" class="inp inp-sm" style="margin:0;" oninput="calcSalTotal()">
+      <input type="text" value="${it.memo||''}" class="inp inp-sm item-memo" style="margin:0;">
       <input type="number" value="${it.qty}" class="inp inp-sm" style="margin:0;text-align:center;" oninput="calcSalTotal()">
       <input type="number" value="${it.rate}" step="0.01" class="inp inp-sm" style="margin:0;text-align:right;" oninput="calcSalTotal()">
       <span class="line-amt" style="font-size:11px;font-weight:600;text-align:right;">${fmtN(it.qty*it.rate)}</span>
@@ -948,6 +1002,19 @@ function printSalePDF(){
   if(!pid){toast('Select customer','error');return;}
   const{net}=calcSalTotal();if(net<=0){toast('Nothing to print','error');return;}
   generatePDF({refNo:document.getElementById('sal-vno').value,date:document.getElementById('sal-date').value,partyId:pid,type:'SALE',amount:net,items:getSalItems()});
+}
+
+function printInvoiceTx(id){
+  const t=db.transactions.find(x=>x.id===id);
+  if(!t){toast('Invoice not found','error');return;}
+  generatePDF(t);
+}
+function viewInvoiceTx(id){
+  const t=db.transactions.find(x=>x.id===id);
+  if(!t){toast('Invoice not found','error');return;}
+  const p=db.parties.find(x=>x.id===t.partyId);
+  const items=(t.items||[]).map((it,i)=>(i+1)+'. '+(it.code||'')+' '+(it.detail||'')+' | Qty '+it.qty+' × '+fmtN(it.rate)+(it.memo?' | '+it.memo:'')).join('\n');
+  alert((t.type==='SALE'?'SALES INVOICE':'PURCHASE BILL')+'\n\nVoucher: '+t.refNo+'\nDate: '+t.date+'\nParty: '+(p?.name||'N/A')+'\nAmount: '+fmtN(t.amount)+'\nMemo: '+(t.memo||'')+'\n\nItems:\n'+(items||'No items'));
 }
 
 // ============ ITEM SELECTOR ============
@@ -976,63 +1043,175 @@ function renderModalItems(){
 }
 function selectModalItem(id){const item=db.items.find(i=>i.id===id);if(item&&itemSelectCallback)itemSelectCallback(item);}
 
-// ============ RECEIPT / PAYMENT ============
-function initReceiptVoucher(){
-  document.getElementById('rec-vno').value='RCT-'+String(db.nextVouchers.RCT).padStart(5,'0');
-  document.getElementById('rec-date').value=todayStr();
-  loadPartySelect('rec-party','Receivable');
-  document.getElementById('rec-amt').value='';document.getElementById('rec-desc').value='';updateRecBalance();
-}
-function updateRecBalance(){
-  const pid=document.getElementById('rec-party').value;const bal=getPartyBal(pid);
-  document.getElementById('rec-bal').innerText=fmt(Math.abs(bal));
-  document.getElementById('rec-bal').style.color=bal>0?'var(--success)':'var(--danger)';
-}
-function saveReceipt(){
-  const pid=document.getElementById('rec-party').value,amt=parseFloat(document.getElementById('rec-amt').value)||0;
-  if(!pid){toast('Select party','error');return;}if(amt<=0){toast('Enter amount','error');return;}
-  db.transactions.push({id:tid(),refNo:document.getElementById('rec-vno').value,date:document.getElementById('rec-date').value,partyId:pid,type:'RECEIPT',amount:amt,desc:document.getElementById('rec-desc').value,cashAccount:document.getElementById('rec-cash').value});
-  db.nextVouchers.RCT++;save();toast('✓ Receipt posted');showView('dashboard');
-}
-function initPaymentVoucher(){
-  document.getElementById('pay-vno').value='PAY-'+String(db.nextVouchers.PAY).padStart(5,'0');
-  document.getElementById('pay-date').value=todayStr();
-  loadPartySelect('pay-party','Payable');
-  document.getElementById('pay-amt').value='';document.getElementById('pay-desc').value='';updatePayBalance();
-}
-function updatePayBalance(){
-  const pid=document.getElementById('pay-party').value;const bal=getPartyBal(pid);
-  document.getElementById('pay-bal').innerText=fmt(Math.abs(bal));
-  document.getElementById('pay-bal').style.color=bal<0?'var(--danger)':'var(--success)';
-}
-function savePayment(){
-  const pid=document.getElementById('pay-party').value,amt=parseFloat(document.getElementById('pay-amt').value)||0;
-  if(!pid){toast('Select party','error');return;}if(amt<=0){toast('Enter amount','error');return;}
-  db.transactions.push({id:tid(),refNo:document.getElementById('pay-vno').value,date:document.getElementById('pay-date').value,partyId:pid,type:'PAYMENT',amount:amt,desc:document.getElementById('pay-desc').value,cashAccount:document.getElementById('pay-cash').value});
-  db.nextVouchers.PAY++;save();toast('✓ Payment posted');showView('dashboard');
-}
+// ============ UNIFIED VOUCHER BOOK ============
+let unifiedVoucherType='RECEIPT';
 
-// ============ JOURNAL ============
-function initJournalVoucher(){
-  document.getElementById('jv-vno').value='JV-'+String(db.nextVouchers.JV).padStart(5,'0');
-  document.getElementById('jv-date').value=todayStr();document.getElementById('jv-narr').value='';
-  document.getElementById('jv-rows').innerHTML='';addJvRow();addJvRow();
+function initUnifiedVoucher(){
+  setVoucherType(unifiedVoucherType||'RECEIPT',true);
 }
-function addJvRow(){
+function setVoucherType(type,reset=true){
+  unifiedVoucherType=type;
+  initVoucherRegister();
+  document.querySelectorAll('#view-voucher-book .seg-item').forEach(e=>e.classList.toggle('active',e.dataset.vtype===type));
+  const partySec=document.getElementById('uv-party-section'), jvSec=document.getElementById('uv-journal-section');
+  const partyLabel=document.getElementById('uv-party-label'), accountLabel=document.getElementById('uv-account-label');
+  const postBtn=document.getElementById('uv-post-btn');
+  if(type==='JOURNAL'){
+    partySec.classList.add('hidden');jvSec.classList.remove('hidden');
+    document.getElementById('uv-vno').value='JV-'+String(db.nextVouchers.JV).padStart(5,'0');
+    document.getElementById('uv-date').value=todayStr();
+    document.getElementById('uv-jv-narr').value='';
+    document.getElementById('uv-jv-rows').innerHTML='';addUnifiedJournalRow();addUnifiedJournalRow();
+    return;
+  }
+  partySec.classList.remove('hidden');jvSec.classList.add('hidden');
+  const isReceipt=type==='RECEIPT';
+  document.getElementById('uv-vno').value=(isReceipt?'RCT-':'PAY-')+String(db.nextVouchers[isReceipt?'RCT':'PAY']).padStart(5,'0');
+  document.getElementById('uv-date').value=todayStr();
+  partyLabel.innerText=isReceipt?'Receipts From':'Payment To';
+  accountLabel.innerText=isReceipt?'Receipts As':'Payment As';
+  postBtn.innerText=isReceipt?'Post Receipt':'Post Payment';
+  postBtn.className='btn '+(isReceipt?'btn-success':'btn-danger')+' btn-full';
+  loadPartySelect('uv-party',isReceipt?'Receivable':'Payable');
+  document.getElementById('uv-amt').value='';document.getElementById('uv-memo').value='';
+  updateUnifiedBalance();
+}
+function updateUnifiedBalance(){
+  const pid=document.getElementById('uv-party')?.value;if(!pid)return;
+  const bal=getPartyBal(pid);
+  document.getElementById('uv-bal').innerText=fmt(Math.abs(bal));
+  document.getElementById('uv-bal').style.color=unifiedVoucherType==='RECEIPT'?(bal>0?'var(--success)':'var(--danger)'):(bal<0?'var(--danger)':'var(--success)');
+}
+function postUnifiedVoucher(){
+  if(unifiedVoucherType==='JOURNAL'){saveUnifiedJournal();return;}
+  const isReceipt=unifiedVoucherType==='RECEIPT';
+  const pid=document.getElementById('uv-party').value,amt=parseFloat(document.getElementById('uv-amt').value)||0;
+  const memo=document.getElementById('uv-memo').value.trim(),cash=document.getElementById('uv-cash').value;
+  if(!pid){toast(isReceipt?'Select customer':'Select supplier','error');return;}
+  if(amt<=0){toast('Enter amount','error');return;}
+  const updated={refNo:document.getElementById('uv-vno').value,date:document.getElementById('uv-date').value,partyId:pid,type:isReceipt?'RECEIPT':'PAYMENT',amount:amt,desc:memo,memo,cashAccount:cash,entries:isReceipt?[{side:'Dr',accountId:getCashPartyId(cash),amt},{side:'Cr',partyId:pid,amt}]:[{side:'Dr',partyId:pid,amt},{side:'Cr',accountId:getCashPartyId(cash),amt}]};
+  if(editingVoucherId){
+    const idx=db.transactions.findIndex(t=>t.id===editingVoucherId);
+    if(idx>-1){db.transactions[idx]={...db.transactions[idx],...updated};editingVoucherId=null;save();toast('✓ '+(isReceipt?'Receipt':'Payment')+' updated');showView('dashboard');return;}
+  }
+  db.transactions.push({id:tid(),...updated});
+  db.nextVouchers[isReceipt?'RCT':'PAY']++;
+  save();toast('✓ '+(isReceipt?'Receipt':'Payment')+' posted');showView('dashboard');
+}
+function getUnifiedAccountOptions(){
+  const partyOpts=db.parties.map(p=>`<option value="party:${p.id}">${p.code} - ${p.name}</option>`).join('');
+  const accOpts=(db.accounts||[]).map(a=>`<option value="account:${a.id}">${a.code} - ${a.name}</option>`).join('');
+  return '<option value="">- Select Account -</option>'+partyOpts+accOpts;
+}
+function addUnifiedJournalRow(){
   const row=document.createElement('div');row.style.cssText='display:flex;gap:5px;align-items:center;margin-bottom:4px;';
   row.innerHTML=`<select class="inp inp-sm" style="width:50px;margin:0;"><option>Dr</option><option>Cr</option></select>
-    <select class="inp inp-sm" style="flex:1;margin:0;">${db.parties.map(p=>`<option value="${p.id}">${p.name}</option>`).join('')}</select>
-    <input type="number" placeholder="0.00" class="inp inp-sm" style="width:80px;margin:0;" oninput="calcJvTotal()">
-    <button onclick="this.parentElement.remove();calcJvTotal();" style="background:none;border:none;color:var(--danger);cursor:pointer;">×</button>`;
-  document.getElementById('jv-rows').appendChild(row);
+    <select class="inp inp-sm" style="flex:1;margin:0;">${getUnifiedAccountOptions()}</select>
+    <input type="number" placeholder="0.00" class="inp inp-sm" style="width:80px;margin:0;" oninput="calcUnifiedJournalTotal()">
+    <button onclick="this.parentElement.remove();calcUnifiedJournalTotal();" style="background:none;border:none;color:var(--danger);cursor:pointer;">×</button>`;
+  document.getElementById('uv-jv-rows').appendChild(row);calcUnifiedJournalTotal();
 }
-function calcJvTotal(){let dr=0,cr=0;document.querySelectorAll('#jv-rows>div').forEach(r=>{const s=r.querySelector('select').value,a=parseFloat(r.querySelector('input[type=number]').value)||0;if(s==='Dr')dr+=a;else cr+=a;});document.getElementById('jv-dr-total').innerText=fmtN(dr);document.getElementById('jv-cr-total').innerText=fmtN(cr);}
-function saveJournal(){
-  const narr=document.getElementById('jv-narr').value.trim();if(!narr){toast('Enter narration','error');return;}
-  const entries=[];document.querySelectorAll('#jv-rows>div').forEach(r=>{const s=r.querySelector('select').value,p=r.querySelectorAll('select')[1].value,a=parseFloat(r.querySelector('input[type=number]').value)||0;if(a>0)entries.push({side:s,partyId:p,amt:a});});
+function calcUnifiedJournalTotal(){let dr=0,cr=0;document.querySelectorAll('#uv-jv-rows>div').forEach(r=>{const s=r.querySelector('select').value,a=parseFloat(r.querySelector('input[type=number]').value)||0;if(s==='Dr')dr+=a;else cr+=a;});document.getElementById('uv-dr-total').innerText=fmtN(dr);document.getElementById('uv-cr-total').innerText=fmtN(cr);}
+function saveUnifiedJournal(){
+  const narr=document.getElementById('uv-jv-narr').value.trim();if(!narr){toast('Enter narration','error');return;}
+  const entries=[];document.querySelectorAll('#uv-jv-rows>div').forEach(r=>{const s=r.querySelector('select').value,v=r.querySelectorAll('select')[1].value,a=parseFloat(r.querySelector('input[type=number]').value)||0;if(v&&a>0){const [kind,id]=v.split(':');entries.push({side:s,[kind==='party'?'partyId':'accountId']:id,amt:a});}});
   if(entries.length<2){toast('Need 2+ entries','error');return;}
-  db.transactions.push({id:tid(),refNo:document.getElementById('jv-vno').value,date:document.getElementById('jv-date').value,type:'JOURNAL',amount:entries.filter(e=>e.side==='Dr').reduce((s,e)=>s+e.amt,0),desc:narr,entries});
+  const drTotal=entries.filter(e=>e.side==='Dr').reduce((s,e)=>s+e.amt,0),crTotal=entries.filter(e=>e.side==='Cr').reduce((s,e)=>s+e.amt,0);
+  if(Math.abs(drTotal-crTotal)>0.005){toast('Debit and Credit must be equal','error');return;}
+  const updated={refNo:document.getElementById('uv-vno').value,date:document.getElementById('uv-date').value,type:'JOURNAL',amount:drTotal,desc:narr,memo:narr,entries};
+  if(editingVoucherId){
+    const idx=db.transactions.findIndex(t=>t.id===editingVoucherId);
+    if(idx>-1){db.transactions[idx]={...db.transactions[idx],...updated};editingVoucherId=null;save();toast('✓ Journal updated');showView('dashboard');return;}
+  }
+  db.transactions.push({id:tid(),...updated});
   db.nextVouchers.JV++;save();toast('✓ Journal posted');showView('dashboard');
+}
+
+// Backward-compatible wrappers for old calls/data.
+function initReceiptVoucher(){setVoucherType('RECEIPT');}
+function initPaymentVoucher(){setVoucherType('PAYMENT');}
+function initJournalVoucher(){setVoucherType('JOURNAL');}
+function saveReceipt(){setVoucherType('RECEIPT');postUnifiedVoucher();}
+function savePayment(){setVoucherType('PAYMENT');postUnifiedVoucher();}
+function saveJournal(){setVoucherType('JOURNAL');saveUnifiedJournal();}
+
+// ============ VOUCHER REGISTER ============
+function initVoucherRegister(){
+  const sel=document.getElementById('voucher-filter-party');if(!sel)return;
+  const current=sel.value||'ALL';
+  sel.innerHTML='<option value="ALL">All Parties</option>'+db.parties.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(p=>`<option value="${p.id}">${p.code} - ${p.name}</option>`).join('');
+  if([...sel.options].some(o=>o.value===current))sel.value=current;
+  renderVoucherRegister();
+}
+function voucherTypeLabel(type){return type==='RECEIPT'?'Receipt':type==='PAYMENT'?'Payment':type==='JOURNAL'?'Journal':type==='PURCHASE'?'Purchase':type==='SALE'?'Sale':type;}
+function voucherPartyName(t){
+  const p=db.parties.find(x=>x.id===t.partyId);if(p)return p.name;
+  const ep=(t.entries||[]).find(e=>e.partyId);const pp=ep&&db.parties.find(x=>x.id===ep.partyId);return pp?pp.name:'—';
+}
+function voucherNarration(t){return [t.desc,t.memo,(t.items||[]).map(i=>i.memo).filter(Boolean).join(' | ')].filter(Boolean).join(' - ')||'—';}
+function renderVoucherRegister(){
+  const box=document.getElementById('voucher-register-list');if(!box)return;
+  const q=(document.getElementById('voucher-search')?.value||'').trim().toLowerCase();
+  const type=document.getElementById('voucher-filter-type')?.value||'ALL',party=document.getElementById('voucher-filter-party')?.value||'ALL';
+  const from=document.getElementById('voucher-from-date')?.value||'',to=document.getElementById('voucher-to-date')?.value||'';
+  let list=db.transactions.slice().sort((a,b)=>new Date(b.date)-new Date(a.date));
+  list=list.filter(t=>{
+    const pn=voucherPartyName(t).toLowerCase(),nar=voucherNarration(t).toLowerCase();
+    if(q&&!([t.refNo,t.type,pn,nar,t.date].join(' ').toLowerCase().includes(q)))return false;
+    if(type!=='ALL'&&t.type!==type)return false;
+    if(party!=='ALL'&&!(t.partyId===party||(t.entries||[]).some(e=>e.partyId===party)))return false;
+    if(from&&t.date<from)return false;if(to&&t.date>to)return false;return true;
+  });
+  box.innerHTML=list.map(t=>{
+    const entries=(t.entries||[]).map(e=>{const n=e.partyId?(db.parties.find(p=>p.id===e.partyId)?.name||'Party'):(db.accounts.find(a=>a.id===e.accountId)?.name||'Account');return `${e.side} ${n} ${fmtN(e.amt||0)}`;}).join(' | ');
+    return `<div class="ledger-card" style="cursor:default;margin-bottom:6px;"><div style="padding:10px 12px;display:flex;justify-content:space-between;gap:8px;"><div><div style="font-weight:800;">${t.refNo||'—'} <span style="font-size:9px;color:var(--primary);">· ${voucherTypeLabel(t.type)}</span></div><div style="font-size:10px;color:var(--text3);">${t.date||'—'} · ${voucherPartyName(t)}</div><div style="font-size:10px;margin-top:4px;">${voucherNarration(t)}</div>${entries?`<div style="font-size:9px;color:var(--text3);margin-top:4px;">${entries}</div>`:''}</div><div style="text-align:right;white-space:nowrap;"><div style="font-size:14px;font-weight:800;">${fmtN(t.amount||0)}</div><button onclick="viewVoucherDetail('${t.id}')" class="btn btn-dark btn-xs" style="margin-top:5px;">View</button>
+<button onclick="editVoucherFromRegister('${t.id}')" class="btn btn-dark btn-xs" style="margin-top:5px;">Edit</button>
+<button onclick="deleteVoucherFromRegister('${t.id}')" class="btn btn-xs" style="margin-top:5px;background:var(--danger-tint);color:var(--danger);">Del</button></div></div></div>`;
+  }).join('')||'<div style="text-align:center;padding:16px;color:var(--text3);">No matching vouchers</div>';
+}
+function editVoucherFromRegister(id){
+  const t=db.transactions.find(x=>x.id===id);if(!t)return;
+  if(t.type==='PURCHASE'){showView('purchase-invoice');editingTxId=id;loadPartySelect('pur-party','Payable');loadPurchaseRecord(t);document.getElementById('pur-post-btn').innerText='Update';return;}
+  if(t.type==='SALE'){showView('sale-invoice');editingTxId=id;loadPartySelect('sal-party','Receivable');loadSaleRecord(t);document.getElementById('sal-post-btn').innerText='Update';return;}
+  editingVoucherId=id;
+  setVoucherType(t.type,false);
+  document.getElementById('uv-vno').value=t.refNo||'';
+  document.getElementById('uv-date').value=t.date||todayStr();
+  if(t.type==='RECEIPT'||t.type==='PAYMENT'){
+    document.getElementById('uv-party').value=t.partyId||'';
+    document.getElementById('uv-amt').value=t.amount||0;
+    document.getElementById('uv-memo').value=t.memo||t.desc||'';
+    document.getElementById('uv-cash').value=t.cashAccount||'Cash';
+    updateUnifiedBalance();
+  }else{
+    document.getElementById('uv-jv-narr').value=t.memo||t.desc||'';
+    const box=document.getElementById('uv-jv-rows');box.innerHTML='';
+    (t.entries||[]).forEach(e=>{
+      addUnifiedJournalRow();
+      const r=box.lastElementChild, selects=r.querySelectorAll('select');
+      selects[0].value=e.side; selects[1].value=e.partyId?`party:${e.partyId}`:`account:${e.accountId}`;
+      r.querySelector('input[type=number]').value=e.amt||0;
+    });
+    if(!t.entries?.length){addUnifiedJournalRow();addUnifiedJournalRow();}
+  }
+  document.getElementById('uv-post-btn').innerText='Update '+(t.type==='JOURNAL'?'Journal':t.type==='RECEIPT'?'Receipt':'Payment');
+  showView('voucher-book');toast('Editing '+t.refNo);
+}
+function deleteVoucherFromRegister(id){
+  const t=db.transactions.find(x=>x.id===id);if(!t)return;
+  if(t.type==='PURCHASE'){deletePurchaseTx(id);renderVoucherRegister();return;}
+  if(t.type==='SALE'){deleteSaleTx(id);renderVoucherRegister();return;}
+  if(confirm(`Delete ${t.refNo||'voucher'}? This entry will be removed from the ledger.`)){
+    db.transactions=db.transactions.filter(x=>x.id!==id);save();renderVoucherRegister();toast('✓ Deleted');
+  }
+}
+
+function viewVoucherDetail(id){
+  const t=db.transactions.find(x=>x.id===id);if(!t)return;
+  let detail=`${t.refNo||''}\\nType: ${voucherTypeLabel(t.type)}\\nDate: ${t.date||''}\\nParty: ${voucherPartyName(t)}\\nAmount: ${fmtN(t.amount||0)}\\nMemo: ${voucherNarration(t)}`;
+  if(t.items?.length)detail+=`\\nItems: ${t.items.map(i=>`${i.code||''} ${i.detail||''} ${i.memo||''} Qty ${i.qty||0} Rate ${fmtN(i.rate||0)}`).join(' | ')}`;
+  if(t.entries?.length)detail+=`\\nDouble Entry:\\n${t.entries.map(e=>{const n=e.partyId?(db.parties.find(p=>p.id===e.partyId)?.name||'Party'):(db.accounts.find(a=>a.id===e.accountId)?.name||'Account');return `${e.side}: ${n} = ${fmtN(e.amt||0)}`;}).join('\\n')}`;
+  alert(detail);
 }
 
 // ============ LEDGERS ============
@@ -1073,63 +1252,125 @@ function getPartyBal(pid){
 }
 
 // ============ ACCOUNTS MANAGER ============
+function getAccountTypesForCategory(cat){
+  const groups=ACCOUNT_GROUPS[cat]||[];
+  const out=[];
+  groups.forEach(g=>(ACCOUNT_TYPES[g.value]||[]).forEach(t=>{
+    if(!out.some(x=>x.value===t.value))out.push({...t,group:g.value});
+  }));
+  return out;
+}
+function updateAccTypeOptions(selected){
+  const cat=document.getElementById('acc-main-cat').value;
+  const types=getAccountTypesForCategory(cat);
+  const el=document.getElementById('acc-type');
+  const current=selected||el.value||types[0]?.value||'';
+  el.innerHTML=types.map(t=>`<option value="${t.value}" data-group="${t.group}">${t.label}</option>`).join('');
+  if(types.some(t=>t.value===current))el.value=current;
+  else if(types[0])el.value=types[0].value;
+  updateAccNamePrompt();
+}
+function updateAccNamePrompt(){
+  const type=document.getElementById('acc-type').value;
+  const nameInput=document.getElementById('acc-sub-name');
+  const help=document.getElementById('acc-help');
+  const prompts={
+    Cash:'e.g. Cash Account',Bank:'e.g. HBL Bank Account',
+    'Accounts Receivable':'e.g. ABC TRADERS',Inventory:'e.g. Inventory',
+    'Other Current Asset':'e.g. Advance / Prepaid Expense',
+    'Property, Plant & Equipment':'e.g. Office Equipment',
+    'Accumulated Depreciation':'e.g. Accumulated Depreciation - Equipment',
+    'Other Asset':'e.g. Security Deposit',
+    'Accounts Payable':'e.g. XYZ SUPPLIERS',
+    'Other Current Liability':'e.g. Accrued Expenses',
+    'Long-term Liability':'e.g. Long Term Loan',
+    'Owner Capital':'e.g. OWNER CAPITAL','Drawings':'e.g. OWNER DRAWINGS',
+    'Retained Earnings':'e.g. RETAINED EARNINGS',
+    'Sales Revenue':'e.g. SALES REVENUE','Service Revenue':'e.g. SERVICE REVENUE',
+    'Other Revenue':'e.g. OTHER INCOME','Cost of Goods Sold':'e.g. COST OF GOODS SOLD',
+    Purchase:'e.g. PURCHASES','Operating Expense':'e.g. SALARY EXPENSE','Other Expense':'e.g. OTHER EXPENSE'
+  };
+  nameInput.placeholder=prompts[type]||'Enter account name...';
+  help.innerText='Manual entry required: enter the actual ledger/account name. Example: Accounts Receivable → ABC TRADERS.';
+  updateAccCode();
+}
 function updateAccCode(){
   const cat=document.getElementById('acc-main-cat').value;
+  const type=document.getElementById('acc-type')?.value||'';
+  const existing=db.accounts.filter(a=>a.category===cat && a.accountType===type).length;
   const prefix=ACCOUNT_CATEGORIES[cat].prefix;
-  const existing=db.accounts.filter(a=>a.category===cat).length;
   document.getElementById('acc-code').value=prefix+String(existing+1).padStart(4,'0');
 }
 function setAccOBType(t){currentAccOBType=t;document.querySelectorAll('#view-accounts-manager .seg:last-of-type .seg-item').forEach((e,i)=>{e.classList.toggle('active',(i===0&&t==='Dr')||(i===1&&t==='Cr'));});}
+function resetAccountForm(){
+  editingAccId=null;
+  document.getElementById('acc-sub-name').value='';document.getElementById('acc-ob').value='';
+  document.getElementById('acc-bf-date').value='';document.getElementById('acc-rate').value='1.00';
+  document.getElementById('acc-save-btn').innerText='Save Account';
+  updateAccTypeOptions();updateAccCode();
+}
 function addAccount(){
-  const name=document.getElementById('acc-sub-name').value.trim();if(!name){toast('Enter name','error');return;}
   const cat=document.getElementById('acc-main-cat').value;
+  const type=document.getElementById('acc-type').value;
+  const name=document.getElementById('acc-sub-name').value.trim();
+  if(!type){toast('Select account type','error');return;}
+  if(!name){toast('Enter account name','error');return;}
+  const typeOpt=document.querySelector(`#acc-type option[value="${type}"]`);
+  const group=typeOpt?.dataset.group||'';
+  const finalName=name.toUpperCase();
+  const data={category:cat,group,accountType:type,name:finalName,linkedPartyId:null,bfDate:document.getElementById('acc-bf-date').value,rate:parseFloat(document.getElementById('acc-rate').value)||1,openingBal:Number(document.getElementById('acc-ob').value)||0,openingType:currentAccOBType};
   if(editingAccId){
     const idx=db.accounts.findIndex(a=>a.id===editingAccId);
-    if(idx>-1){
-      db.accounts[idx]={...db.accounts[idx],category:cat,name:name.toUpperCase(),bfDate:document.getElementById('acc-bf-date').value,rate:parseFloat(document.getElementById('acc-rate').value)||1,openingBal:Number(document.getElementById('acc-ob').value)||0,openingType:currentAccOBType};
-      save();editingAccId=null;
-      document.getElementById('acc-sub-name').value='';document.getElementById('acc-ob').value='';
-      document.getElementById('acc-save-btn').innerText='Save Account';
-      updateAccCode();renderChartOfAccounts();toast('✓ Account updated');
-      return;
-    }
+    if(idx>-1){db.accounts[idx]={...db.accounts[idx],...data};save();resetAccountForm();renderChartOfAccounts();toast('✓ Account updated');return;}
   }
-  db.accounts.push({id:tid(),category:cat,code:document.getElementById('acc-code').value,name:name.toUpperCase(),bfDate:document.getElementById('acc-bf-date').value,rate:parseFloat(document.getElementById('acc-rate').value)||1,openingBal:Number(document.getElementById('acc-ob').value)||0,openingType:currentAccOBType});
-  save();document.getElementById('acc-sub-name').value='';document.getElementById('acc-ob').value='';
-  updateAccCode();renderChartOfAccounts();toast('✓ Account added');
+  db.accounts.push({id:tid(),code:document.getElementById('acc-code').value,...data});
+  save();resetAccountForm();renderChartOfAccounts();toast('✓ Account added');
 }
 function editAccount(id){
   const a=db.accounts.find(x=>x.id===id);if(!a)return;
   editingAccId=id;
   document.getElementById('acc-main-cat').value=a.category;
-  document.getElementById('acc-sub-name').value=a.name;
+  updateAccTypeOptions(a.accountType);
+  document.getElementById('acc-sub-name').value=a.name||'';
   document.getElementById('acc-code').value=a.code;
   document.getElementById('acc-bf-date').value=a.bfDate||'';
   document.getElementById('acc-rate').value=a.rate||1;
   document.getElementById('acc-ob').value=a.openingBal||0;
   setAccOBType(a.openingType||'Dr');
+  updateAccNamePrompt();
   document.getElementById('acc-save-btn').innerText='Update Account';
-  window.scrollTo(0,0);
-  toast('Editing '+a.name);
+  window.scrollTo(0,0);toast('Editing '+a.name);
 }
-function cancelAccEdit(){
-  editingAccId=null;document.getElementById('acc-sub-name').value='';document.getElementById('acc-ob').value='';
-  document.getElementById('acc-save-btn').innerText='Save Account';updateAccCode();
+function cancelAccEdit(){resetAccountForm();}
+function getAccountUsage(id){
+  const hits=[];
+  db.transactions.forEach(t=>{
+    (t.entries||[]).forEach(e=>{if(e.accountId===id)hits.push(`${t.refNo||'No Voucher'} · ${t.date||''} · ${voucherTypeLabel(t.type)} · ${e.side} ${fmtN(e.amt||0)}`);});
+  });
+  return hits;
 }
 function deleteAccount(id){
   const a=db.accounts.find(x=>x.id===id);if(!a)return;
-  if(confirm('Delete account "'+a.name+'"?')){
-    db.accounts=db.accounts.filter(x=>x.id!==id);save();renderChartOfAccounts();toast('✓ Deleted');
-  }
+  const usage=getAccountUsage(id);
+  if(usage.length){alert(`Account "${a.name}" cannot be deleted because entries exist:\n\n${usage.join('\n')}`);return;}
+  if(confirm('Delete account "'+a.name+'"?')){db.accounts=db.accounts.filter(x=>x.id!==id);save();renderChartOfAccounts();toast('✓ Deleted');}
 }
 function renderChartOfAccounts(){
   const cats=['Assets','Liabilities','Capital','Revenue','Expenses'];
   let html='';
   cats.forEach(cat=>{
-    const accs=db.accounts.filter(a=>a.category===cat);
-    html+=`<div style="padding:10px 14px;font-weight:700;font-size:11px;background:var(--surface2);border-bottom:1px solid var(--border);color:var(--primary);">${cat.toUpperCase()}</div>`;
-    if(accs.length===0)html+=`<div style="padding:8px 14px;font-size:11px;color:var(--text3);">No accounts</div>`;
-    else accs.forEach(a=>{html+=`<div style="padding:8px 14px;border-bottom:1px solid var(--border);"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px;"><span><strong>${a.code}</strong> - ${a.name}</span><span style="color:var(--text3);">Bal: ${fmtN(a.openingBal||0)} ${a.openingType||''}</span></div><div style="display:flex;gap:4px;"><button onclick="editAccount('${a.id}')" class="btn btn-dark btn-xs">Edit</button><button onclick="deleteAccount('${a.id}')" class="btn btn-xs" style="background:var(--danger-tint);color:var(--danger);">Delete</button></div></div>`;});
+    html+=`<div style="padding:10px 14px;font-weight:800;font-size:11px;background:var(--surface2);border-bottom:1px solid var(--border);color:var(--primary);">${cat.toUpperCase()}</div>`;
+    const groups=(ACCOUNT_GROUPS[cat]||[]);
+    groups.forEach(g=>{
+      const accs=db.accounts.filter(a=>a.category===cat && (a.group||'')===g.value);
+      html+=`<div style="padding:7px 14px 4px;font-size:10px;font-weight:700;color:var(--text2);">${g.label}</div>`;
+      if(!accs.length){html+=`<div style="padding:4px 20px 8px;font-size:10px;color:var(--text3);">No accounts</div>`;return;}
+      accs.forEach(a=>{
+        const party=a.linkedPartyId?db.parties.find(p=>p.id===a.linkedPartyId):null;
+        const bal=Number(a.openingBal||0);
+        html+=`<div style="padding:8px 14px 8px 20px;border-bottom:1px solid var(--border);"><div style="display:flex;justify-content:space-between;gap:8px;font-size:12px;"><span><strong>${a.code}</strong> - ${a.name}</span><span style="color:var(--text3);white-space:nowrap;">${a.accountType||''}</span></div><div style="font-size:9px;color:var(--text3);margin-top:2px;">${party?'Linked party: '+party.code+' - '+party.name:'Ledger account'} · Opening: ${fmtN(bal)} ${a.openingType||''}</div><div style="display:flex;gap:4px;margin-top:5px;"><button onclick="editAccount('${a.id}')" class="btn btn-dark btn-xs">Edit</button><button onclick="deleteAccount('${a.id}')" class="btn btn-xs" style="background:var(--danger-tint);color:var(--danger);">Delete</button></div></div>`;
+      });
+    });
   });
   document.getElementById('chart-of-accounts').innerHTML=html;
 }
@@ -1157,7 +1398,18 @@ function saveStockItem(){
 function cancelStockForm(){document.getElementById('stock-form-container').style.display='none';editingItemId=null;}
 function editStockItem(id){openStockForm(id);}
 function adjustStock(id){const i=db.items.find(x=>x.id===id);const n=prompt('New stock qty for '+i.brand+':',i.stock);if(n!==null&&n!==''){i.stock=Math.max(0,parseInt(n)||0);save();renderStockItems();toast('✓ Updated');}}
-function deleteStockItem(id){if(confirm('Delete?')){db.items=db.items.filter(i=>i.id!==id);save();renderStockItems();toast('✓ Deleted');}}
+function getStockItemUsage(id){
+  const item=db.items.find(i=>i.id===id);if(!item)return[];
+  const code=String(item.code).padStart(5,'0');
+  return db.transactions.filter(t=>(t.type==='PURCHASE'||t.type==='SALE')&&(t.items||[]).some(it=>it.code===code||String(it.code)===String(item.code)))
+    .map(t=>`${t.refNo||'No Voucher'} · ${t.date||''} · ${voucherTypeLabel(t.type)} · ${db.parties.find(p=>p.id===t.partyId)?.name||'Unknown Party'}`);
+}
+function deleteStockItem(id){
+  const i=db.items.find(x=>x.id===id);if(!i)return;
+  const usage=getStockItemUsage(id);
+  if(usage.length){alert(`Item "${i.brand||i.desc||i.code}" cannot be deleted because entries exist:\n\n${usage.join('\n')}`);return;}
+  if(confirm('Delete item?')){db.items=db.items.filter(x=>x.id!==id);save();renderStockItems();toast('✓ Deleted');}
+}
 
 // ============ STOCK LEDGER ============
 function initStockLedger(){
@@ -1193,13 +1445,16 @@ function openStatement(pid){
     const wanted=p.type==='Cash'?'CASH':'BANK';
     db.transactions.filter(t=>t.cashAccount===wanted).forEach(t=>{
       const other=db.parties.find(x=>x.id===t.partyId);
-      const label=(t.type==='RECEIPT'?'Receipt from ':'Payment to ')+(other?other.name:'Unknown')+(t.desc?(' - '+t.desc):'');
+      const itemMemos=(t.items||[]).map(it=>it.memo).filter(Boolean).join(' | ');
+      const label=(t.type==='RECEIPT'?'Receipt from ':'Payment to ')+(other?other.name:'Unknown')+[t.desc,t.memo,itemMemos].filter(Boolean).map(x=>' - '+x).join('');
       rows.push({date:t.date,refNo:t.refNo,desc:label,dr:t.type==='RECEIPT'?t.amount:0,cr:t.type==='PAYMENT'?t.amount:0});
     });
   } else {
     db.transactions.filter(t=>t.partyId===pid).forEach(t=>{
       const dr=(t.type==='SALE'||t.type==='PAYMENT')?t.amount:0,cr=(t.type==='PURCHASE'||t.type==='RECEIPT')?t.amount:0;
-      rows.push({date:t.date,refNo:t.refNo,desc:t.desc||t.type,dr,cr});
+      const itemMemos=(t.items||[]).map(it=>it.memo).filter(Boolean).join(' | ');
+      const memoText=[t.desc||t.type,t.memo,itemMemos].filter(Boolean).join(' - ');
+      rows.push({date:t.date,refNo:t.refNo,desc:memoText,dr,cr});
     });
   }
   rows.sort((a,b)=>new Date(a.date)-new Date(b.date));
@@ -1232,8 +1487,9 @@ function generatePDF(tx){
   doc.setTextColor(0);doc.setFontSize(8);doc.setFont('helvetica','bold');doc.text('BILL TO:',14,36);
   doc.setFontSize(10);doc.setFont('helvetica','normal');doc.text(p?.name||'N/A',14,42);
   doc.setFontSize(8);doc.text('Ref: '+tx.refNo,130,36);doc.text('Date: '+tx.date,130,42);
-  const rows=(tx.items||[]).map(it=>[it.code||'',it.detail||'',it.qty,cur()+' '+fmtN(it.rate),cur()+' '+fmtN(it.qty*it.rate)]);
-  doc.autoTable({startY:50,head:[['Code','Description','Qty','Rate','Total']],body:rows,theme:'grid',headStyles:{fillColor:[10,24,48],fontSize:7},styles:{fontSize:7}});
+  const rows=(tx.items||[]).map(it=>[it.code||'',it.detail||'',it.memo||'',it.qty,cur()+' '+fmtN(it.rate),cur()+' '+fmtN(it.qty*it.rate)]);
+  doc.autoTable({startY:50,head:[['Code','Description','Memo','Qty','Rate','Total']],body:rows,theme:'grid',headStyles:{fillColor:[10,24,48],fontSize:7},styles:{fontSize:7}});
+  if(tx.memo){doc.setFontSize(7);doc.text('Memo: '+tx.memo,14,doc.lastAutoTable.finalY+6);} 
   const y=doc.lastAutoTable.finalY+6;
   doc.setFontSize(8);doc.text('Subtotal: '+fmtN(tx.subtotal||tx.amount),130,y);
   doc.setFont('helvetica','bold');doc.setFontSize(10);doc.text('TOTAL: '+cur()+' '+fmtN(tx.amount),130,y+8);
@@ -1248,13 +1504,16 @@ function printLedgerPDF(){
     const wanted=p.type==='Cash'?'CASH':'BANK';
     db.transactions.filter(t=>t.cashAccount===wanted).forEach(t=>{
       const other=db.parties.find(x=>x.id===t.partyId);
-      const label=(t.type==='RECEIPT'?'Receipt from ':'Payment to ')+(other?other.name:'Unknown');
+      const itemMemos=(t.items||[]).map(it=>it.memo).filter(Boolean).join(' | ');
+      const label=(t.type==='RECEIPT'?'Receipt from ':'Payment to ')+(other?other.name:'Unknown')+[t.desc,t.memo,itemMemos].filter(Boolean).map(x=>' - '+x).join('');
       rows2.push({date:t.date,refNo:t.refNo,desc:label,dr:t.type==='RECEIPT'?t.amount:0,cr:t.type==='PAYMENT'?t.amount:0});
     });
   } else {
     db.transactions.filter(t=>t.partyId===currentStmtId).forEach(t=>{
       const dr=(t.type==='SALE'||t.type==='PAYMENT')?t.amount:0,cr=(t.type==='PURCHASE'||t.type==='RECEIPT')?t.amount:0;
-      rows2.push({date:t.date,refNo:t.refNo,desc:t.desc||t.type,dr,cr});
+      const itemMemos=(t.items||[]).map(it=>it.memo).filter(Boolean).join(' | ');
+      const memoText=[t.desc||t.type,t.memo,itemMemos].filter(Boolean).join(' - ');
+      rows2.push({date:t.date,refNo:t.refNo,desc:memoText,dr,cr});
     });
   }
   rows2.sort((a,b)=>new Date(a.date)-new Date(b.date));
