@@ -598,19 +598,13 @@ let db = JSON.parse(localStorage.getItem('SmartAcc_Pro')) || {
     name: 'My Company', address: '123 Main Street, City', phone: '+1 234 567 890',
     email: 'info@mycompany.com', bank: 'Bank: Example Bank\nA/C: 0000000000', currency: 'USD'
   },
-  parties: [
-    {id:'p1',code:'LCP00001',name:'CASH CUSTOMER',type:'Receivable',phone:'',openingBal:0,openingType:'Dr'},
-    {id:'p2',code:'LCP00002',name:'GENERAL SUPPLIER',type:'Payable',phone:'',openingBal:0,openingType:'Cr'},
-    {id:'p3',code:'LCP00003',name:'WALK-IN CUSTOMER',type:'Receivable',phone:'',openingBal:0,openingType:'Dr'},
-    {id:'p4',code:'ACB00001',name:'CASH ACCOUNT',type:'Cash',phone:'',openingBal:0,openingType:'Dr'},
-    {id:'p5',code:'ACB00002',name:'BANK ACCOUNT',type:'Bank',phone:'',openingBal:0,openingType:'Dr'}
-  ],
+  parties: [],
   accounts: [],
   items: [],
   transactions: [],
   nextVouchers: { PUR: 1, SAL: 1, RCT: 1, PAY: 1, JV: 1 },
   nextItemCode: 1,
-  nextPartyCode: 6
+  nextPartyCode: 1
 };
 
 // Normalize older saved accounts so the detailed chart remains compatible with existing data.
@@ -623,6 +617,109 @@ let db = JSON.parse(localStorage.getItem('SmartAcc_Pro')) || {
   }
   if(a.linkedPartyId===undefined)a.linkedPartyId=null;
 });
+
+// Accounts Manager AR/AP accounts are also real customers/suppliers in Purchase/Sale.
+// Keep a linked party record so the same ledger can be selected in those books.
+function ensureAccountPartyLinks(){
+  let changed=false;
+  (db.accounts||[]).forEach(a=>{
+    const partyType=a.accountType==='Accounts Receivable'?'Receivable':a.accountType==='Accounts Payable'?'Payable':a.accountType==='Cash'?'Cash':a.accountType==='Bank'?'Bank':null;
+    if(!partyType)return;
+    let party=a.linkedPartyId?db.parties.find(p=>p.id===a.linkedPartyId):null;
+    if(!party) party=db.parties.find(p=>p.linkedAccountId===a.id);
+    if(!party) party=db.parties.find(p=>p.type===partyType && String(p.name||'').toUpperCase()===String(a.name||'').toUpperCase());
+    if(!party){
+      const usedCodes=db.parties.map(p=>String(p.code||''));
+      let n=Number(db.nextPartyCode||6);
+      let code; do{code='LCP'+String(n).padStart(5,'0');n++;}while(usedCodes.includes(code));
+      party={id:tid(),code,name:String(a.name||'ACCOUNT').toUpperCase(),type:partyType,phone:'',openingBal:Number(a.openingBal||0),openingType:a.openingType|| (partyType==='Payable'?'Cr':'Dr'),linkedAccountId:a.id};
+      db.parties.push(party);
+      db.nextPartyCode=n;
+      changed=true;
+    }else if(party.linkedAccountId!==a.id || party.name!==String(a.name||'').toUpperCase()){
+      party.linkedAccountId=a.id;
+      party.name=String(a.name||party.name||'ACCOUNT').toUpperCase();
+      party.type=partyType;
+      party.openingBal=Number(a.openingBal||0);
+      party.openingType=a.openingType||party.openingType||(partyType==='Payable'?'Cr':'Dr');
+      changed=true;
+    }
+    if(a.linkedPartyId!==party.id){a.linkedPartyId=party.id;changed=true;}
+  });
+  if(changed) localStorage.setItem('SmartAcc_Pro',JSON.stringify(db));
+}
+ensureAccountPartyLinks();
+
+// Remove only the original demo/default parties if they were never used.
+// Any party that has transactions or is linked to a real account is preserved.
+(function removeUnusedDefaultParties(){
+  const defaultIds=['p1','p2','p3','p4','p5'];
+  const defaultNames=['CASH CUSTOMER','GENERAL SUPPLIER','WALK-IN CUSTOMER','CASH ACCOUNT','BANK ACCOUNT'];
+  const usedIds=new Set();
+  (db.transactions||[]).forEach(t=>{
+    if(t.partyId)usedIds.add(t.partyId);
+    (t.entries||[]).forEach(e=>{if(e.partyId)usedIds.add(e.partyId);});
+  });
+  const linkedIds=new Set((db.accounts||[]).map(a=>a.linkedPartyId).filter(Boolean));
+  const before=(db.parties||[]).length;
+  db.parties=(db.parties||[]).filter(p=>{
+    const isDefault=defaultIds.includes(p.id)||defaultNames.includes(String(p.name||'').toUpperCase());
+    return !(isDefault && !usedIds.has(p.id) && !linkedIds.has(p.id));
+  });
+  if(db.parties.length!==before)save();
+})();
+
+
+// ============ TEST / DEMO DATA ============
+// Create a practical mobile-shop sample dataset only when the database is completely empty.
+// All sample records are normal editable/deletable records; no sample transactions are posted.
+function seedMobileShopDemoData(){
+  if((db.parties||[]).length || (db.accounts||[]).length || (db.items||[]).length || (db.transactions||[]).length) return;
+  const usedCodes=new Set();
+  function nextCode(cat){
+    const prefix=ACCOUNT_CATEGORIES[cat].prefix;
+    let n=1, code;
+    do{code=prefix+String(n).padStart(4,'0');n++;}while(usedCodes.has(code));
+    usedCodes.add(code); return code;
+  }
+  function addAccount(category,group,accountType,name,openingBal=0,openingType='Dr'){
+    const a={id:tid(),code:nextCode(category),category,group,accountType,name:name.toUpperCase(),linkedPartyId:null,bfDate:'',rate:1,openingBal,openingType};
+    db.accounts.push(a); return a;
+  }
+  // Assets: cash/bank, customer receivables and inventory control.
+  [
+    ['Current Assets','Cash','Cash Counter 1'],
+    ['Current Assets','Cash','Cash Counter 2'],
+    ['Current Assets','Bank','HBL Bank'],
+    ['Current Assets','Bank','Meezan Bank'],
+    ['Current Assets','Inventory','Mobile Inventory Control']
+  ].forEach(x=>addAccount('Assets',x[0],x[1],x[2]));
+  // 5 customers (Accounts Receivable) for Sales testing.
+  ['ALPHA MOBILE','CITY MOBILE','SMART PHONE HOUSE','TECH ZONE','MOBILE MART'].forEach(n=>addAccount('Assets','Current Assets','Accounts Receivable',n));
+  // 5 suppliers (Accounts Payable) for Purchase testing.
+  ['SAMSUNG DISTRIBUTORS','APPLE DISTRIBUTORS','GOOGLE DISTRIBUTORS','PAK MOBILE WHOLESALE','DUBAI MOBILE SUPPLIERS'].forEach(n=>addAccount('Liabilities','Current Liabilities','Accounts Payable',n,0,'Cr'));
+  // Other liabilities.
+  ['Sales Tax Payable','Accrued Expenses','Customer Advances','Short Term Loan','Long Term Bank Loan'].forEach((n,i)=>addAccount('Liabilities',i<3?'Current Liabilities':'Long-term Liabilities',i<3?'Other Current Liability':'Long-term Liability',n,0,'Cr'));
+  // Capital.
+  ['Owner Capital','Partner Capital','Owner Drawings','Retained Earnings','Opening Equity'].forEach((n,i)=>addAccount('Capital',i===3?'Retained Earnings':'Owner Capital',i===2?'Drawings':i===3?'Retained Earnings':'Owner Capital',n,0,i===2?'Dr':'Cr'));
+  // Revenue.
+  ['Mobile Phone Sales','Accessories Sales','Repair Service Revenue','Online Sales','Other Shop Revenue'].forEach((n,i)=>addAccount('Revenue',i<2?'Operating Revenue':'Other Revenue',i===2?'Service Revenue':i===4?'Other Revenue':'Sales Revenue',n,0,'Cr'));
+  // Expenses.
+  ['Shop Rent Expense','Staff Salary Expense','Electricity Expense','Internet Expense','Delivery Expense'].forEach(n=>addAccount('Expenses','Operating Expenses','Operating Expense',n,0,'Dr'));
+  // 5 mobile-shop inventory items for Purchase/Sale testing.
+  [
+    ['Mobile Phones','7A','7A MODEL',8,85,110],
+    ['Mobile Phones','GOOGLE','GOOGLE PIXEL 8',6,420,520],
+    ['Mobile Phones','APPLE','IPHONE 15',5,650,780],
+    ['Mobile Phones','SAMSUNG','SAMSUNG GALAXY S24',7,560,680],
+    ['Mobile Phones','XIAOMI','REDMI NOTE 13',10,180,240]
+  ].forEach(x=>{
+    db.items.push({id:tid(),category:x[0],brand:x[1],code:db.nextItemCode++,desc:x[2],stock:x[3],minQty:2,maxQty:20,cost:x[4],retail:x[5]});
+  });
+  ensureAccountPartyLinks();
+  save();
+}
+seedMobileShopDemoData();
 
 function save() { localStorage.setItem('SmartAcc_Pro', JSON.stringify(db)); }
 function cur() { return db.config.currency || 'USD'; }
@@ -1326,12 +1423,28 @@ function addAccount(){
   const typeOpt=document.querySelector(`#acc-type option[value="${type}"]`);
   const group=typeOpt?.dataset.group||'';
   const finalName=name.toUpperCase();
-  const data={category:cat,group,accountType:type,name:finalName,linkedPartyId:null,bfDate:document.getElementById('acc-bf-date').value,rate:parseFloat(document.getElementById('acc-rate').value)||1,openingBal:Number(document.getElementById('acc-ob').value)||0,openingType:currentAccOBType};
+  const openingBal=Number(document.getElementById('acc-ob').value)||0;
+  const openingType=currentAccOBType;
+  const data={category:cat,group,accountType:type,name:finalName,linkedPartyId:null,bfDate:document.getElementById('acc-bf-date').value,rate:parseFloat(document.getElementById('acc-rate').value)||1,openingBal,openingType};
   if(editingAccId){
     const idx=db.accounts.findIndex(a=>a.id===editingAccId);
-    if(idx>-1){db.accounts[idx]={...db.accounts[idx],...data};save();resetAccountForm();renderChartOfAccounts();toast('✓ Account updated');return;}
+    if(idx>-1){
+      const old=db.accounts[idx];
+      data.linkedPartyId=old.linkedPartyId||null;
+      db.accounts[idx]={...old,...data};
+      // Keep the linked Customer/Supplier/Cash/Bank party name synchronized when an account is renamed.
+      if(old.linkedPartyId){
+        const lp=db.parties.find(p=>p.id===old.linkedPartyId);
+        if(lp) lp.name=finalName;
+      }
+      ensureAccountPartyLinks();
+      save();resetAccountForm();renderChartOfAccounts();
+      toast('✓ Account name updated to: '+finalName);return;
+    }
   }
-  db.accounts.push({id:tid(),code:document.getElementById('acc-code').value,...data});
+  const account={id:tid(),code:document.getElementById('acc-code').value,...data};
+  db.accounts.push(account);
+  ensureAccountPartyLinks();
   save();resetAccountForm();renderChartOfAccounts();toast('✓ Account added');
 }
 function editAccount(id){
@@ -1352,10 +1465,24 @@ function editAccount(id){
 function cancelAccEdit(){resetAccountForm();}
 function getAccountUsage(id){
   const hits=[];
+  const a=db.accounts.find(x=>x.id===id);
+  const linkedPartyId=a?.linkedPartyId||null;
   db.transactions.forEach(t=>{
-    (t.entries||[]).forEach(e=>{if(e.accountId===id)hits.push(`${t.refNo||'No Voucher'} · ${t.date||''} · ${voucherTypeLabel(t.type)} · ${e.side} ${fmtN(e.amt||0)}`);});
+    (t.entries||[]).forEach(e=>{
+      if(e.accountId===id){
+        hits.push(`${t.refNo||'No Voucher'} · ${t.date||''} · ${voucherTypeLabel(t.type)} · ${e.side} ${fmtN(e.amt||0)}`);
+      }
+    });
+    // Purchase/Sale/Receipt/Payment records may reference the linked party
+    // rather than the accountId directly. Treat those as account usage too.
+    if(linkedPartyId && t.partyId===linkedPartyId){
+      hits.push(`${t.refNo||'No Voucher'} · ${t.date||''} · ${voucherTypeLabel(t.type)} · Party-linked entry ${fmtN(t.amount||0)}`);
+    }
+    if(linkedPartyId && (t.entries||[]).some(e=>e.partyId===linkedPartyId && !e.accountId)){
+      hits.push(`${t.refNo||'No Voucher'} · ${t.date||''} · ${voucherTypeLabel(t.type)} · Party ledger entry ${fmtN(t.amount||0)}`);
+    }
   });
-  return hits;
+  return [...new Set(hits)];
 }
 function deleteAccount(id){
   const a=db.accounts.find(x=>x.id===id);if(!a)return;
@@ -1541,7 +1668,11 @@ function loadSettings(){document.getElementById('set-name').value=db.config.name
 function saveSettings(){db.config.name=document.getElementById('set-name').value;db.config.address=document.getElementById('set-address').value;db.config.phone=document.getElementById('set-phone').value;db.config.email=document.getElementById('set-email').value;db.config.bank=document.getElementById('set-bank').value;db.config.currency=document.getElementById('set-currency').value||'USD';save();toast('✓ Saved');showView('dashboard');}
 
 // ============ UTILS ============
-function loadPartySelect(id,type){const sorted=db.parties.filter(p=>p.type===type).sort((a,b)=>a.name.localeCompare(b.name));document.getElementById(id).innerHTML='<option value="">- Select -</option>'+sorted.map(p=>`<option value="${p.id}">${p.code} - ${p.name}</option>`).join('');}
+function loadPartySelect(id,type){
+  ensureAccountPartyLinks();
+  const sorted=db.parties.filter(p=>p.type===type).sort((a,b)=>a.name.localeCompare(b.name));
+  document.getElementById(id).innerHTML='<option value="">- Select -</option>'+sorted.map(p=>`<option value="${p.id}">${p.code} - ${p.name}</option>`).join('');
+}
 function closeModal(id){document.getElementById(id).classList.add('hidden');itemSelectCallback=null;}
 function toast(msg,type){const el=document.getElementById('toast');el.innerText=msg;el.style.background=type==='error'?'var(--danger)':'var(--text)';el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2200);}
 function exportBackup(){const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='2SMARTS_Backup_'+todayStr()+'.json';a.click();toast('✓ Backup saved');}
